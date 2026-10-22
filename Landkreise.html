@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Landkreise</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+html,body{height:100%;margin:0;font:14px sans-serif}
+#map{position:absolute;inset:0;background:#f8f9fa}
+#bar{position:absolute;top:10px;left:50px;right:10px;z-index:1000;background:rgba(0,0,0,.85);color:#fff;padding:8px 12px;border-radius:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#bar i{display:inline-block;width:12px;height:12px;margin:0 3px 0 8px;vertical-align:middle;border:1px solid #fff}
+button{cursor:pointer;padding:4px 10px}
+#bar.min{background:transparent!important;padding:0;right:auto}
+#bar.min #hide{background:rgba(0,0,0,.85);color:#fff;border:0;border-radius:6px;padding:6px 10px}
+#panel{display:none;position:absolute;top:60px;right:10px;bottom:10px;width:min(440px,92vw);z-index:1000;background:#fff;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.4);padding:10px;flex-direction:column;gap:6px;box-sizing:border-box}
+#panel textarea{font:12px monospace;width:100%;box-sizing:border-box}
+#daten{flex:1;min-height:120px}
+#report{overflow:auto;max-height:35%;font-size:12px}
+#names{display:none;height:90px}
+</style></head><body>
+<div id="bar"><button id="hide" title="Meldungen ein-/ausblenden">▲</button><span id="barbody" style="display:contents"><span id="msg">Starte…</span>
+<span>Farbe nach Anzahl:<i style="background:#fee08b"></i>1<i style="background:#fdae61"></i>2–3<i style="background:#f46d43"></i>4–9<i style="background:#a50026"></i>10+</span>
+<button id="tgl">Daten &amp; Prüfung</button>
+<label><input type="checkbox" id="pick"> Standort per Klick setzen</label> <button id="loc">Browser-Standort</button> <span id="geo"></span></span></div>
+<div id="panel">
+<b>Liste (Name;Anzahl – „(Lkr)“ bzw. „(Kr)“ = Landkreis, ohne Zusatz = Stadt, falls es eine gibt)</b>
+<textarea id="daten">Ahrweiler (Lkr);0
+Aichach-Friedberg (Lkr);1
+Alb-Donau-Kreis;1
+Altenburger Land;24
+Altenkirchen (Lkr);0
+Altmarkkreis Salzwedel;0
+Altötting (Lkr);0
+Alzey-Worms (Lkr);0
+Amberg;0
+Amberg-Sulzbach (Lkr);0
+Ammerland (Lkr);0
+Anhalt-Bitterfeld;0
+Ansbach;1
+Ansbach (Lkr);2
+Aschaffenburg;0
+Aschaffenburg (Lkr);0
+Augsburg;0
+Augsburg (Lkr);1
+Aurich (Lkr);19
+Bad Dürkheim (Lkr);0
+Bad Kissingen (Lkr);0
+Bad Kreuznach (Lkr);1
+Bad Tölz-Wolfratshausen (Lkr);9
+Baden-Baden;1
+Bamberg;0
+Bamberg (Lkr);1
+Barnim;0
+Bautzen;0
+Bayreuth;1
+Bayreuth (Lkr);1
+Berchtesgadener Land (Lkr);0
+Bergstraße (Kr);0
+Berlin;1
+Bernkastel-Wittlich (Lkr);0
+Biberach (Lkr);3
+Bielefeld;0
+Birkenfeld (Lkr);0
+Bochum;1
+Bodenseekreis;3
+Bonn;3
+Borken (Kr);2
+Bottrop;1
+Brandenburg an der Havel;0
+Braunschweig;0
+Breisgau-Hochschwarzwald (Lkr);2
+Bremen;0
+Bremerhaven;0
+Burgenlandkreis;1
+Böblingen (Lkr);86
+Börde;0
+Calw (Lkr);4
+Celle (Lkr);0
+Cham (Lkr);0
+Chemnitz;2
+Cloppenburg (Lkr);0
+Coburg;0
+Coburg (Lkr);0
+Cochem-Zell (Lkr);0
+Coesfeld (Kr);0
+Cottbus;0
+Cuxhaven (Lkr);0
+Dachau (Lkr);1
+Dahme-Spreewald;0
+Darmstadt;0
+Darmstadt-Dieburg (Lkr);0
+Deggendorf (Lkr);0
+Delmenhorst;0
+Dessau-Roßlau;0
+Diepholz (Lkr);0
+Dillingen an der Donau (Lkr);0
+Dingolfing-Landau (Lkr);0
+Dithmarschen;0
+Donau-Ries (Lkr);0
+Donnersbergkreis;0
+Dortmund;2
+Dresden;0
+Duisburg;1
+Düren (Kr);0
+Düsseldorf;0
+Ebersberg (Lkr);1
+Eichsfeld (Lkr);0
+Eichstätt (Lkr);0
+Eifelkreis Bitburg-Prüm;0
+Elbe-Elster;0
+Emden;3
+Emmendingen (Lkr);1
+Emsland (Lkr);3
+Ennepe-Ruhr-Kreis;0
+Enzkreis;4
+Erding (Lkr);0
+Erfurt;0
+Erlangen;0
+Erlangen-Höchstadt (Lkr);0
+Erzgebirgskreis;1
+Essen;0
+Esslingen (Lkr);379
+Euskirchen (Kr);0
+Flensburg;0
+Forchheim (Lkr);0
+Frankenthal (Pfalz);0
+Frankfurt (Oder);0
+Frankfurt am Main;0
+Freiburg im Breisgau;4
+Freising (Lkr);0
+Freudenstadt (Lkr);1
+Freyung-Grafenau (Lkr);0
+Friesland (Lkr);0
+Fulda (Lkr);0
+Fürstenfeldbruck (Lkr);0
+Fürth;0
+Fürth (Lkr);0
+Garmisch-Partenkirchen (Lkr);3
+Gelsenkirchen;1
+Gera;21
+Germersheim (Lkr);0
+Gießen (Lkr);0
+Gifhorn;0
+Goslar (Lkr);0
+Gotha (Lkr);0
+Grafschaft Bentheim (Lkr);2
+Greiz;1
+Groß-Gerau (Kr);2
+Göppingen (Lkr);3
+Görlitz;0
+Göttingen (Lkr);1
+Günzburg (Lkr);1
+Gütersloh (Kr);2
+Hagen;0
+Halle (Saale);0
+Hamburg;6
+Hameln-Pyrmont (Lkr);0
+Hamm;0
+Hanau;0
+Harburg;0
+Harz (Lkr);0
+Havelland;0
+Haßberge (Lkr);0
+Heidekreis;1
+Heidelberg;0
+Heidenheim (Lkr);1
+Heilbronn;2
+Heilbronn (Lkr);2
+Heinsberg (Kr);0
+Helmstedt (Lkr);0
+Herford (Kr);0
+Herne;1
+Hersfeld-Rotenburg (Lkr);0
+Herzogtum Lauenburg;0
+Hildburghausen (Lkr);0
+Hildesheim (Lkr);0
+Hochsauerlandkreis;0
+Hochtaunuskreis;1
+Hof;1
+Hof (Lkr);1
+Hohenlohekreis;1
+Holzminden (Lkr);0
+Höxter (Kr);0
+Ilm-Kreis;0
+Ingolstadt;0
+Jena;1
+Jerichower Land;0
+Kaiserslautern;0
+Kaiserslautern (Lkr);0
+Karlsruhe;1
+Karlsruhe (Lkr);1
+Kassel;0
+Kassel (Lkr);0
+Kaufbeuren;0
+Kelheim (Lkr);0
+Kempten (Allgäu);0
+Kiel;0
+Kitzingen (Lkr);0
+Kleve (Kr);1
+Koblenz;1
+Konstanz (Lkr);1
+Krefeld;1
+Kronach (Lkr);0
+Kulmbach (Lkr);1
+Kusel (Lkr);0
+Kyffhäuserkreis;0
+Köln;1
+Lahn-Dill-Kreis;1
+Landau in der Pfalz;0
+Landsberg am Lech (Lkr);0
+Landshut;0
+Landshut (Lkr);0
+Leer (Lkr);1
+Leipzig;0
+Leipzig (Lkr);1
+Leverkusen;0
+Lichtenfels (Lkr);0
+Limburg-Weilburg (Lkr);3
+Lindau (Lkr);0
+Lippe (Kr);0
+Ludwigsburg (Lkr);11
+Ludwigshafen am Rhein;1
+Ludwigslust-Parchim;0
+Lörrach (Lkr);1
+Lübeck;0
+Lüchow-Dannenberg;0
+Lüneburg;0
+Magdeburg;0
+Main-Kinzig-Kreis;0
+Main-Spessart (Lkr);0
+Main-Tauber-Kreis;2
+Main-Taunus-Kreis;0
+Mainz;0
+Mainz-Bingen (Lkr);0
+Mannheim;0
+Mansfeld-Südharz;0
+Marburg-Biedenkopf (Lkr);0
+Mayen-Koblenz (Lkr);4
+Mecklenburgische Seenplatte;0
+Meißen;0
+Memmingen;0
+Merzig-Wadern (Lkr);0
+Mettmann (Kr);1
+Miesbach (Lkr);1
+Miltenberg (Lkr);0
+Minden-Lübbecke (Kr);0
+Mittelsachsen;0
+Märkisch-Oderland;0
+Märkischer Kreis;0
+Mönchengladbach;0
+Mühldorf am Inn (Lkr);0
+Mülheim an der Ruhr;0
+München;0
+München (Lkr);0
+Münster;0
+Neckar-Odenwald-Kreis;1
+Neu-Ulm (Lkr);0
+Neuburg-Schrobenhausen (Lkr);0
+Neumarkt in der Oberpfalz (Lkr);0
+Neumünster;0
+Neunkirchen (Lkr);0
+Neustadt an der Aisch-Bad Windsheim (Lkr);0
+Neustadt an der Waldnaab (Lkr);0
+Neustadt an der Weinstraße;0
+Neuwied (Lkr);2
+Nienburg/Weser (Lkr);0
+Nordfriesland;0
+Nordhausen (Lkr);0
+Nordsachsen;0
+Nordwestmecklenburg;0
+Northeim (Lkr);0
+Nürnberg;1
+Nürnberger Land (Lkr);1
+Oberallgäu (Lkr);0
+Oberbergischer Kreis;0
+Oberhausen;0
+Oberhavel;0
+Oberspreewald-Lausitz;0
+Odenwaldkreis;0
+Oder-Spree;0
+Offenbach (Lkr);0
+Offenbach am Main;0
+Oldenburg;0
+Oldenburg (Lkr);0
+Olpe (Kr);0
+Ortenaukreis;1
+Osnabrück;0
+Osnabrück (Lkr);0
+Ostalbkreis;1
+Ostallgäu (Lkr);0
+Osterholz (Lkr);0
+Ostholstein;0
+Ostprignitz-Ruppin;1
+Paderborn (Kr);0
+Passau;0
+Passau (Lkr);0
+Peine (Lkr);0
+Pfaffenhofen an der Ilm (Lkr);0
+Pforzheim;2
+Pinneberg;0
+Pirmasens;0
+Plön;0
+Potsdam;0
+Potsdam-Mittelmark;0
+Prignitz;0
+Rastatt (Lkr);1
+Ravensburg (Lkr);3
+Recklinghausen (Kr);1
+Regen (Lkr);0
+Regensburg;0
+Regensburg (Lkr);0
+Region Hannover;1
+Regionalverband Saarbrücken;0
+Rems-Murr-Kreis;14
+Remscheid;0
+Rendsburg-Eckernförde;1
+Reutlingen (Lkr);11
+Rhein-Erft-Kreis;0
+Rhein-Hunsrück-Kreis;1
+Rhein-Kreis Neuss;0
+Rhein-Lahn-Kreis;0
+Rhein-Neckar-Kreis;1
+Rhein-Pfalz-Kreis;0
+Rhein-Sieg-Kreis;2
+Rheingau-Taunus-Kreis;0
+Rheinisch-Bergischer Kreis;0
+Rhön-Grabfeld (Lkr);0
+Rosenheim;0
+Rosenheim (Lkr);1
+Rostock;0
+Rostock (Lkr);0
+Rotenburg (Wümme) (Lkr);0
+Roth (Lkr);1
+Rottal-Inn (Lkr);2
+Rottweil (Lkr);2
+Saale-Holzland-Kreis;1
+Saale-Orla-Kreis;1
+Saalekreis;1
+Saalfeld-Rudolstadt (Lkr);0
+Saarlouis (Lkr);0
+Saarpfalz-Kreis;2
+Salzgitter;0
+Salzlandkreis;0
+Schaumburg (Lkr);0
+Schleswig-Flensburg;0
+Schmalkalden-Meiningen (Lkr);0
+Schwabach;1
+Schwalm-Eder-Kreis;0
+Schwandorf (Lkr);0
+Schwarzwald-Baar-Kreis;1
+Schweinfurt;0
+Schweinfurt (Lkr);0
+Schwerin;0
+Schwäbisch Hall (Lkr);1
+Segeberg;0
+Siegen-Wittgenstein (Kr);0
+Sigmaringen (Lkr);11
+Soest (Kr);0
+Solingen;0
+Sonneberg (Lkr);0
+Speyer;0
+Spree-Neiße;0
+St. Wendel (Lkr);0
+Stade;0
+Starnberg (Lkr);0
+Steinburg;0
+Steinfurt (Kr);1
+Stendal;0
+Stormarn;0
+Straubing;0
+Straubing-Bogen (Lkr);0
+Stuttgart;42
+Städteregion Aachen;0
+Suhl;0
+Sächsische Schweiz-Osterzgebirge;0
+Sömmerda (Lkr);0
+Südliche Weinstraße (Lkr);0
+Südwestpfalz;0
+Teltow-Fläming;0
+Tirschenreuth (Lkr);0
+Traunstein (Lkr);0
+Trier;0
+Trier-Saarburg (Lkr);0
+Tuttlingen (Lkr);1
+Tübingen (Lkr);2
+Uckermark;0
+Uelzen;0
+Ulm;0
+Unna (Kr);0
+Unstrut-Hainich-Kreis;0
+Unterallgäu (Lkr);0
+Vechta (Lkr);0
+Verden (Lkr);0
+Viersen (Kr);1
+Vogelsbergkreis;0
+Vogtlandkreis;27
+Vorpommern-Greifswald;0
+Vorpommern-Rügen;3
+Vulkaneifel (Lkr);0
+Waldeck-Frankenberg (Lkr);0
+Waldshut (Lkr);1
+Warendorf (Kr);0
+Wartburgkreis;0
+Weiden in der Oberpfalz;0
+Weilheim-Schongau (Lkr);0
+Weimar;0
+Weimarer Land (Lkr);1
+Weißenburg-Gunzenhausen (Lkr);0
+Werra-Meißner-Kreis;0
+Wesel (Kr);15
+Wesermarsch (Lkr);0
+Westerwaldkreis;0
+Wetteraukreis;0
+Wiesbaden;0
+Wilhelmshaven;0
+Wittenberg;1
+Wittmund (Lkr);0
+Wolfenbüttel (Lkr);0
+Wolfsburg;0
+Worms;1
+Wunsiedel im Fichtelgebirge (Lkr);0
+Wuppertal;0
+Würzburg;1
+Würzburg (Lkr);1
+Zollernalbkreis;2
+Zweibrücken;0
+Zwickau;1</textarea>
+<b>Eigene Zuordnungen (Listenname=Kartenname, eine pro Zeile)</b>
+<textarea id="alias" rows="8">Heidekreis=Soltau-Fallingbostel
+Region Hannover=Hanover
+Nürnberg=Nuremberg
+Köln=Cologne
+Kleve (Kr)=Cleves
+Koblenz=Koblenz Coblenz
+Heilbronn=Heilbronn city
+Freiburg im Breisgau=Freiburg
+Ludwigshafen am Rhein=Ludwigshafen
+Städteregion Aachen=Aachen Städte|Aachen
+Göttingen (Lkr)=Göttingen|Osterode
+Zwickau=Zwickau Städte|Zwickauer Land|Chemnitzer Land
+Erzgebirgskreis=Annaberg|Aue-Schwarzenberg|Mittlerer Erzgebirgskreis|Stollberg
+Vogtlandkreis=Vogtlandkreis|Plauen
+Leipzig (Lkr)=Leipziger Land|Muldentalkreis
+Mittelsachsen=Freiberg|Mittweida|Döbeln
+Nordsachsen=Delitzsch|Torgau-Oschatz
+Sächsische Schweiz-Osterzgebirge=Sächsische Schweiz|Weißeritzkreis
+Görlitz=Görlitz Städte|Löbau-Zittau|Niederschlesischer Oberlausitzkreis
+Bautzen=Bautzen|Kamenz
+Meißen=Meißen|Riesa-Großenhain
+Saalekreis=Saalkreis|Merseburg-Querfurt
+Burgenlandkreis=Burgenlandkreis|Weißenfels
+Salzlandkreis=Aschersleben-Staßfurt|Bernburg|Schönebeck
+Anhalt-Bitterfeld=Anhalt-Zerbst|Bitterfeld|Köthen
+Harz (Lkr)=Halberstadt|Quedlinburg|Wernigerode
+Börde=Bördekreis|Ohrekreis
+Mansfeld-Südharz=Mansfelder Land|Sangerhausen
+Mecklenburgische Seenplatte=Demmin|Mecklenburg-Strelitz|Müritz|Neubrandenburg
+Rostock (Lkr)=Bad Doberan|Güstrow
+Vorpommern-Rügen=Nordvorpommern|Rügen|Stralsund
+Vorpommern-Greifswald=Ostvorpommern|Uecker-Randow|Greifswald
+Ludwigslust-Parchim=Ludwigslust|Parchim
+München=Munich
+Mülheim an der Ruhr=Mülheim
+Speyer=Speyer Spires
+Weiden in der Oberpfalz=Weiden
+Kempten (Allgäu)=Kempten
+Landau in der Pfalz=Landau
+Frankenthal (Pfalz)=Frankenthal
+Halle (Saale)=Halle
+Neustadt an der Weinstraße=Neustadt Städte
+Dessau-Roßlau=Dessau Städte
+Herzogtum Lauenburg=Lauenburg
+Eifelkreis Bitburg-Prüm=Bitburg-Prüm
+Rotenburg (Wümme) (Lkr)=Rotenburg
+Nienburg/Weser (Lkr)=Nienburg
+Regionalverband Saarbrücken=Saarbrücken Städte
+Dillingen an der Donau (Lkr)=Dillingen
+Landsberg am Lech (Lkr)=Landsberg
+Mühldorf am Inn (Lkr)=Mühldorf
+Neumarkt in der Oberpfalz (Lkr)=Neumarkt
+Pfaffenhofen an der Ilm (Lkr)=Pfaffenhofen
+Wunsiedel im Fichtelgebirge (Lkr)=Wunsiedel
+Neustadt an der Waldnaab (Lkr)=Neustadt
+Neustadt an der Aisch-Bad Windsheim (Lkr)=Neustadt-Bad Windsheim
+Saale-Holzland-Kreis=Saale-Holzland</textarea>
+<div><button id="apply">Übernehmen &amp; speichern</button> <button id="reset">Zurücksetzen</button> <button id="shownames">Namensliste der Karte anzeigen</button></div>
+<textarea id="names" readonly></textarea>
+<div id="report"></div>
+</div>
+<div id="map"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function status(m,err){$('msg').textContent=m;$('bar').style.background=err?'#b02a37':'rgba(0,0,0,.85)';}
+window.onerror=(m,u,l)=>status('JS-Fehler Zeile '+l+': '+m,true);
+
+// Normalisierung: Umlaute auflösen, nur a-z0-9 behalten
+const norm=s=>s.normalize('NFC').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]/g,'');
+// Namensvarianten (exakt zuerst, dann ohne Präfix/Suffix "Kreis/Landkreis/Stadt", dann Sankt->St)
+function variants(n){
+  const b=norm(n),o=[b];
+  for(const x of [b.replace(/^(landkreis|kreisfreiestadt|stadtkreis|kreis|stadt)/,''),b.replace(/(landkreis|kreis)$/,''),b.replace(/^sankt/,'st'),b.replace(/(staedte|stadtkreis)$/,'')])
+    if(x&&!o.includes(x))o.push(x);
+  return o;
+}
+function parse(t){
+  return t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^(.*?)[;\t:,]\s*(\d+)\s*$/); if(!m)return null;
+    let name=m[1].replace(/^"|"$/g,'').trim(),typ=null;
+    const t2=name.match(/^(.*?)\s*\((lkr|kr)\)$/i); if(t2){name=t2[1];typ='lkr';}
+    return {raw:m[1].trim(),name,typ,count:+m[2]};
+  }).filter(Boolean);
+}
+function info(f){
+  const p=f.properties||{};
+  const bez=p.BEZ||p.TYPE_3||p.TYPE_2||'';
+  return {name:p.GEN||p.NAME_3||p.NAME_2||p.name||'',bez,stadt:/stadt|städte|staedte/i.test(bez)&&!/landkreis/i.test(bez)};
+}
+// Zuordnung von der Liste aus: jeder Eintrag sucht sich genau EIN Gebiet
+function lev(a,b){const m=a.length,n=b.length;let p=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){const q=[i];for(let j=1;j<=n;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q;}return p[n];}
+const sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length,1);
+function parseAlias(t){const m={};t.split(/\r?\n/).forEach(l=>{const i=l.indexOf('=');if(i>0)m[norm(l.slice(0,i))]=l.slice(i+1).trim();});return m;}
+function match(entries){
+  const al=parseAlias($('alias').value),idx=new Map();
+  feats.forEach(f=>{const i=info(f);for(const v of variants(i.name)){
+    if(!idx.has(v))idx.set(v,{s:[],l:[]}); idx.get(v)[i.stadt?'s':'l'].push(f);}});
+  const val=new Map(),rep={none:[],amb:[],dup:[],fuzzy:[]},rest=[];
+  const find=(name,typ)=>{const order=typ==='lkr'?['l']:['s','l'];
+    for(const v of variants(name)){const x=idx.get(v);if(!x)continue;for(const k of order)if(x[k].length)return x[k];}return null;};
+  for(const e of entries){
+    const a=al[norm(e.raw)];
+    if(a&&a.includes('|')){let n=0;for(const t of a.split('|')){const g=find(t.trim(),null);if(g&&!val.has(g[0])){val.set(g[0],e);n++;}}if(n)continue;}
+    let c=(a&&!a.includes('|')&&find(a,e.typ))||find(e.name,e.typ);
+    if(!c){rest.push(e);continue;}
+    if(c.length>1)rep.amb.push(e);
+    if(val.has(c[0]))rep.dup.push([e,val.get(c[0])]);else val.set(c[0],e);
+  }
+  // Fuzzy-Suche für alles, was noch fehlt (nur freie Gebiete)
+  for(const e of rest){
+    const nv=variants(e.name),sc=[];
+    for(const f of feats){if(val.has(f))continue;const i=info(f);if(e.typ==='lkr'&&i.stadt)continue;
+      sc.push([Math.max(...variants(i.name).flatMap(v=>nv.map(w=>sim(w,v)))),f]);}
+    sc.sort((x,y)=>y[0]-x[0]);
+    if(sc.length&&sc[0][0]>=0.82){val.set(sc[0][1],e);rep.fuzzy.push([e,sc[0][1],sc[0][0]]);}
+    else rep.none.push(Object.assign({},e,{sug:sc.slice(0,2).filter(x=>x[0]>=0.5).map(x=>info(x[1]).name)}));
+  }
+  return {val,rep};
+}
+const color=n=>n>=10?'#a50026':n>=4?'#f46d43':n>=2?'#fdae61':'#fee08b';
+let map,layer,feats=null,lastVal=new Map();
+function render(){
+  if(!feats)return;
+  const entries=parse($('daten').value),{val,rep}=match(entries);lastVal=val;
+  if(layer)map.removeLayer(layer);
+  layer=L.geoJSON({type:'FeatureCollection',features:feats},{
+    style:f=>{const e=val.get(f);return e&&e.count>0
+      ?{color:'#333',weight:1,fillColor:color(e.count),fillOpacity:.45}
+      :{color:'#999',weight:.7,fillColor:'#999',fillOpacity:.05};},
+    onEachFeature:(f,l)=>{const i=info(f),e=val.get(f);
+      l.bindPopup('<b>'+esc(i.name)+'</b> ('+esc(i.bez)+')<br>'+(e?'Anzahl: <b>'+e.count+'</b>':'<i>nicht in Liste</i>'));}
+  }).addTo(map);
+  const col=[...val.values()].filter(e=>e.count>0).length;
+  const lost=rep.none.filter(e=>e.count>0);
+  status(col+' Gebiete eingefärbt · '+val.size+'/'+entries.length+' Einträge zugeordnet'+(lost.length?' · '+lost.length+' mit Anzahl>0 NICHT gefunden':''),lost.length>0);
+  const li=a=>'<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  $('report').innerHTML='<b>Ungefähr zugeordnet, bitte prüfen ('+rep.fuzzy.length+')</b>'+li(rep.fuzzy.map(([e,f,x])=>esc(e.raw)+' → '+esc(info(f).name)+' ('+Math.round(x*100)+'%)'))+
+    '<b style="color:#b02a37">Nicht gefunden, Anzahl &gt; 0 ('+lost.length+')</b>'+li(lost.map(e=>esc(e.raw)+' ('+e.count+')'+(e.sug&&e.sug.length?' → vielleicht: '+esc(e.sug.join(' / ')):'')))+
+    '<b>Nicht gefunden, Anzahl 0 ('+(rep.none.length-lost.length)+')</b><details><summary>anzeigen</summary>'+li(rep.none.filter(e=>!e.count).map(e=>esc(e.raw)))+'</details>'+
+    '<b>Mehrdeutig ('+rep.amb.length+')</b>'+li(rep.amb.map(e=>esc(e.raw)))+
+    '<b>Gebiet doppelt belegt ('+rep.dup.length+')</b>'+li(rep.dup.map(([a,b])=>esc(a.raw)+' ↔ '+esc(b.raw)));
+}
+$('tgl').onclick=()=>{const p=$('panel');p.style.display=p.style.display==='flex'?'none':'flex';};
+try{const sd=localStorage.getItem('lk_daten'),sa=localStorage.getItem('lk_alias');if(sd)$('daten').value=sd;if(sa)$('alias').value=sa;}catch(e){}
+$('apply').onclick=()=>{try{localStorage.setItem('lk_daten',$('daten').value);localStorage.setItem('lk_alias',$('alias').value);}catch(e){}render();};
+$('reset').onclick=()=>{if(confirm('Gespeicherte Änderungen verwerfen und den Stand der Datei laden?')){try{localStorage.removeItem('lk_daten');localStorage.removeItem('lk_alias');}catch(e){}location.reload();}};
+$('shownames').onclick=()=>{const v=$('names');v.style.display='block';
+  v.value=feats?feats.map(f=>{const i=info(f);return i.name+';'+i.bez;}).join('\n'):'(Karte noch nicht geladen)';v.select();};
+
+map=L.map('map').setView([51.1657,10.4515],6);
+L.tileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+status('Lade Kreisgrenzen…');
+fetch('https://cdn.jsdelivr.net/gh/isellsoap/deutschlandGeoJSON@master/4_kreise/2_hoch.geo.json')
+  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(d=>{feats=d.features;
+    if(feats.length&&!info(feats[0]).name)status('Keine Namensfelder gefunden. Properties: '+Object.keys(feats[0].properties||{}).join(', '),true);
+    else render();})
+  .catch(e=>status('GeoJSON-Fehler: '+e.message,true));
+// Punkt-in-Polygon, um zu zeigen, in welchem Gebiet der Standort liegt
+function inRing(pt,r){let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];
+  if((yi>pt[1])!==(yj>pt[1])&&pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi)c=!c;}return c;}
+const inPoly=(pt,rs)=>inRing(pt,rs[0])&&!rs.slice(1).some(r=>inRing(pt,r));
+function findFeature(lat,lng){const pt=[lng,lat];
+  return feats&&feats.find(f=>{const g=f.geometry;if(!g)return false;
+    return g.type==='Polygon'?inPoly(pt,g.coordinates):g.type==='MultiPolygon'&&g.coordinates.some(q=>inPoly(pt,q));});}
+let mk=null;
+function setPos(ll,src,zoom){
+  if(!mk)mk=L.marker(ll).addTo(map);else mk.setLatLng(ll);
+  const f=findFeature(ll[0],ll[1]),i=f&&info(f),e=f&&lastVal.get(f);
+  mk.bindPopup('<b>Standort</b> ('+esc(src)+')<br>'+ll[0].toFixed(4)+', '+ll[1].toFixed(4)+'<br>'+
+    (f?esc(i.name)+(e?' – Anzahl <b>'+e.count+'</b>':' – nicht in Liste'):'kein Gebiet gefunden')).openPopup();
+  if(zoom)map.setView(ll,9);
+}
+map.on('click',e=>{if($('pick').checked)setPos([e.latlng.lat,e.latlng.lng],'per Klick');});
+const geo=t=>{$('geo').textContent=t;};
+function getLoc(){
+  if(!navigator.geolocation){geo('Browser unterstützt keinen Standort');return;}
+  geo('frage Standort an…');
+  navigator.geolocation.getCurrentPosition(
+    p=>{setPos([p.coords.latitude,p.coords.longitude],'Browser, ±'+Math.round(p.coords.accuracy)+' m',true);geo('Browser-Standort: OK');},
+    e=>geo('Browser-Standort fehlgeschlagen ('+(['','Zugriff verweigert','Position nicht verfügbar','Zeitüberschreitung'][e.code]||e.message)+')'+(window.isSecureContext?'':' – Seite ist nicht per HTTPS geöffnet, dann blockieren Browser den Standort meist')),
+    {enableHighAccuracy:true,timeout:15000});
+}
+$('loc').onclick=getLoc;
+$('hide').onclick=()=>{const b=$('barbody'),h=b.style.display==='none';b.style.display=h?'contents':'none';$('hide').textContent=h?'▲':'▼';$('bar').classList.toggle('min',!h);};
+getLoc();
+</script></body></html>
