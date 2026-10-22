@@ -16,6 +16,7 @@ button{cursor:pointer;padding:4px 10px}
 #daten{flex:1;min-height:120px}
 #report{overflow:auto;max-height:35%;font-size:12px}
 #names{display:none;height:90px}
+.leaflet-popup-content button{min-width:38px;min-height:36px;font-size:18px}
 </style></head><body>
 <div id="bar"><button id="hide" title="Meldungen ein-/ausblenden">▲</button><span id="barbody" style="display:contents"><span id="msg">Starte…</span>
 <span>Farbe nach Anzahl:<i style="background:#fee08b"></i>1<i style="background:#fdae61"></i>2–3<i style="background:#f46d43"></i>4–9<i style="background:#a50026"></i>10+</span>
@@ -482,8 +483,13 @@ Wunsiedel im Fichtelgebirge (Lkr)=Wunsiedel
 Neustadt an der Waldnaab (Lkr)=Neustadt
 Neustadt an der Aisch-Bad Windsheim (Lkr)=Neustadt-Bad Windsheim
 Saale-Holzland-Kreis=Saale-Holzland</textarea>
-<div><button id="apply">Übernehmen &amp; speichern</button> <button id="reset">Zurücksetzen</button> <button id="shownames">Namensliste der Karte anzeigen</button></div>
+<div><button id="apply">Übernehmen &amp; speichern</button> <button id="reset">Zurücksetzen</button> <button id="copy">Liste kopieren</button> <button id="shownames">Namensliste der Karte anzeigen</button></div>
 <textarea id="names" readonly></textarea>
+<details><summary><b>GitHub-Sync</b> (gleiche Zahlen auf allen Geräten)</summary>
+<input id="ghrepo" placeholder="Benutzer/Repository" style="width:100%;box-sizing:border-box">
+<input id="ghpath" placeholder="Datei" value="daten.json" style="width:100%;box-sizing:border-box">
+<input id="ghtoken" type="password" placeholder="Token (Contents: Read and write)" style="width:100%;box-sizing:border-box">
+<button id="ghconnect">Verbinden</button> <button id="ghoff">Trennen</button> <span id="ghmsg"></span></details>
 <div id="report"></div>
 </div>
 <div id="map"></div>
@@ -548,16 +554,37 @@ function match(entries){
 }
 const color=n=>n>=10?'#a50026':n>=4?'#f46d43':n>=2?'#fdae61':'#fee08b';
 let map,layer,feats=null,lastVal=new Map();
+const save=()=>{try{localStorage.setItem('lk_daten',$('daten').value);localStorage.setItem('lk_alias',$('alias').value);}catch(e){}
+  if(ghCfg()){clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghTimer=null;ghPush().catch(e=>gh('GitHub-Fehler: '+e.message));},800);}};
+function editor(f){
+  const i=info(f),e=lastVal.get(f),d=document.createElement('div');
+  d.innerHTML='<b>'+esc(i.name)+'</b> ('+esc(i.bez)+')<br>'+(e?(e.raw!==i.name?'<small>Eintrag: '+esc(e.raw)+'</small><br>':''):'<i>nicht in Liste</i><br>')+
+    '<button class="m">−</button> <input type="number" min="0" value="'+(e?e.count:0)+'" style="width:64px;font-size:16px;text-align:center"> <button class="p">+</button> <button class="s">OK</button>';
+  const inp=d.querySelector('input');
+  d.querySelector('.m').onclick=()=>{inp.value=Math.max(0,(+inp.value||0)-1);};
+  d.querySelector('.p').onclick=()=>{inp.value=(+inp.value||0)+1;};
+  d.querySelector('.s').onclick=()=>{setCount(f,Math.max(0,+inp.value||0));map.closePopup();};
+  L.DomEvent.disableClickPropagation(d);
+  return d;
+}
+function setCount(f,n){
+  const e=lastVal.get(f),ta=$('daten'),lines=ta.value.split('\n');
+  if(e){let done=false;
+    for(let k=0;k<lines.length&&!done;k++){const m=lines[k].trim().match(/^(.*?)([;\t:,]\s*)(\d+)\s*$/);
+      if(m&&m[1].trim()===e.raw){lines[k]=m[1]+m[2]+n;done=true;}}
+    if(!done)lines.push(e.raw+';'+n);
+  }else{const i=info(f);lines.push((i.stadt?i.name:i.name+' (Lkr)')+';'+n);}
+  ta.value=lines.join('\n');save();render();
+}
 function render(){
   if(!feats)return;
   const entries=parse($('daten').value),{val,rep}=match(entries);lastVal=val;
   if(layer)map.removeLayer(layer);
   layer=L.geoJSON({type:'FeatureCollection',features:feats},{
     style:f=>{const e=val.get(f);return e&&e.count>0
-      ?{color:'#333',weight:1,fillColor:color(e.count),fillOpacity:.45}
-      :{color:'#999',weight:.7,fillColor:'#999',fillOpacity:.05};},
-    onEachFeature:(f,l)=>{const i=info(f),e=val.get(f);
-      l.bindPopup('<b>'+esc(i.name)+'</b> ('+esc(i.bez)+')<br>'+(e?'Anzahl: <b>'+e.count+'</b>':'<i>nicht in Liste</i>'));}
+      ?{color:'#6a1b9a',weight:1.6,fillColor:color(e.count),fillOpacity:.45}
+      :{color:'#7b2cbf',weight:1.2,fillColor:'#999',fillOpacity:.05};},
+    onEachFeature:(f,l)=>{l.bindPopup(()=>editor(f));}
   }).addTo(map);
   const col=[...val.values()].filter(e=>e.count>0).length;
   const lost=rep.none.filter(e=>e.count>0);
@@ -571,7 +598,8 @@ function render(){
 }
 $('tgl').onclick=()=>{const p=$('panel');p.style.display=p.style.display==='flex'?'none':'flex';};
 try{const sd=localStorage.getItem('lk_daten'),sa=localStorage.getItem('lk_alias');if(sd)$('daten').value=sd;if(sa)$('alias').value=sa;}catch(e){}
-$('apply').onclick=()=>{try{localStorage.setItem('lk_daten',$('daten').value);localStorage.setItem('lk_alias',$('alias').value);}catch(e){}render();};
+$('apply').onclick=()=>{save();render();};
+$('copy').onclick=()=>{const t=$('daten');t.select();try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}status('Liste kopiert');};
 $('reset').onclick=()=>{if(confirm('Gespeicherte Änderungen verwerfen und den Stand der Datei laden?')){try{localStorage.removeItem('lk_daten');localStorage.removeItem('lk_alias');}catch(e){}location.reload();}};
 $('shownames').onclick=()=>{const v=$('names');v.style.display='block';
   v.value=feats?feats.map(f=>{const i=info(f);return i.name+';'+i.bez;}).join('\n'):'(Karte noch nicht geladen)';v.select();};
@@ -613,4 +641,47 @@ function getLoc(){
 $('loc').onclick=getLoc;
 $('hide').onclick=()=>{const b=$('barbody'),h=b.style.display==='none';b.style.display=h?'contents':'none';$('hide').textContent=h?'▲':'▼';$('bar').classList.toggle('min',!h);};
 getLoc();
+
+// ---- GitHub-Sync: Liste + Zuordnungen als JSON-Datei in einem Repo ----
+const GH_KEY='lk_gh';
+let ghSha=null,ghTimer=null;
+const gh=t=>{$('ghmsg').textContent=t;};
+function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_KEY)||'null');}catch(e){return null;}}
+const b64e=t=>btoa(unescape(encodeURIComponent(t)));
+const b64d=t=>decodeURIComponent(escape(atob(t.replace(/\n/g,''))));
+function ghReq(c,method,body){
+  const h={'Accept':'application/vnd.github+json'};if(c.token)h.Authorization='Bearer '+c.token;
+  return fetch('https://api.github.com/repos/'+c.repo+'/contents/'+c.path+(method==='GET'?'?t='+Date.now():''),
+    {method,headers:h,body:body&&JSON.stringify(body),cache:'no-store'});
+}
+async function ghLoad(){
+  const c=ghCfg();if(!c)return false;
+  const r=await ghReq(c,'GET');
+  if(r.status===404){ghSha=null;return 'none';}
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();ghSha=j.sha;const o=JSON.parse(b64d(j.content));
+  if(o.daten!=null)$('daten').value=o.daten;if(o.alias!=null)$('alias').value=o.alias;
+  return 'ok';
+}
+async function ghPush(){
+  const c=ghCfg();if(!c)return;
+  if(!c.token){gh('Kein Token – Änderung nur lokal gespeichert');return;}
+  const body={message:'Update Landkreise',content:b64e(JSON.stringify({daten:$('daten').value,alias:$('alias').value})),sha:ghSha||undefined};
+  const r=await ghReq(c,'PUT',body);
+  if(r.ok){ghSha=(await r.json()).content.sha;gh('GitHub: gespeichert');return;}
+  if(r.status===409||r.status===422){await ghLoad();render();gh('Anderes Gerät hat zwischenzeitlich gespeichert – Stand neu geladen, bitte Änderung wiederholen');return;}
+  gh('Speichern fehlgeschlagen (HTTP '+r.status+')'+(r.status===401||r.status===403||r.status===404?' – Token/Repo prüfen':''));
+}
+{const c=ghCfg();if(c){$('ghrepo').value=c.repo;$('ghpath').value=c.path;$('ghtoken').value=c.token||'';}}
+$('ghconnect').onclick=async()=>{
+  const c={repo:$('ghrepo').value.trim(),path:$('ghpath').value.trim()||'daten.json',token:$('ghtoken').value.trim()};
+  if(!/^[^\/\s]+\/[^\/\s]+$/.test(c.repo)){gh('Bitte Benutzer/Repository angeben');return;}
+  try{localStorage.setItem(GH_KEY,JSON.stringify(c));gh('verbinde…');
+    const r=await ghLoad();if(r==='none')await ghPush();
+    render();if(r==='ok')gh('Verbunden, Stand von GitHub geladen');}
+  catch(e){gh('Fehler: '+e.message+' – Repo/Token prüfen');}
+};
+$('ghoff').onclick=()=>{try{localStorage.removeItem(GH_KEY);}catch(e){}gh('Getrennt (nur noch lokal)');};
+if(ghCfg())ghLoad().then(r=>{if(r)render();gh(r==='none'?'GitHub: Datei noch nicht vorhanden':'GitHub: Stand geladen');}).catch(e=>gh('GitHub-Laden fehlgeschlagen: '+e.message));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ghCfg()&&!ghTimer)ghLoad().then(r=>{if(r)render();}).catch(()=>{});});
 </script></body></html>
